@@ -10,13 +10,11 @@ import rb_set/internal/fold.{fold_impl}
 import rb_set/internal/insert.{insert_impl}
 import rb_set/internal/map.{map_impl}
 
-pub opaque type RBSet(member) {
+pub type RBSet(member) {
   RBSet(head: Option(RBNode(member)), comparator: fn(member, member) -> Int)
 }
 
 pub fn insert(into set: RBSet(member), this member: member) -> RBSet(member) {
-  echo set
-  echo member
   case set {
     RBSet(None, comparator) ->
       RBSet(Some(RBNode(member, None, None, Black)), comparator)
@@ -29,8 +27,6 @@ pub fn insert(into set: RBSet(member), this member: member) -> RBSet(member) {
 }
 
 pub fn delete(from set: RBSet(member), this member: member) -> RBSet(member) {
-  echo set
-  echo member
   set.head |> delete_impl(member, set.comparator) |> RBSet(set.comparator)
 }
 
@@ -41,12 +37,14 @@ pub fn contains(in set: RBSet(member), this member: member) -> Bool {
   }
 }
 
+pub fn compare(this first: RBSet(member), with second: RBSet(member)) -> Bool {
+  size(difference(first, second)) == 0 && size(difference(second, first)) == 0
+}
+
 pub fn union(
   of first: RBSet(member),
   and second: RBSet(member),
 ) -> RBSet(member) {
-  echo first
-  echo second
   fold(first, second, fn(acc: RBSet(member), member) { insert(acc, member) })
 }
 
@@ -54,8 +52,6 @@ pub fn difference(
   from first: RBSet(member),
   minus second: RBSet(member),
 ) -> RBSet(member) {
-  echo first
-  echo second
   let to_del_list = to_list(second)
   list.fold(to_del_list, first, fn(acc: RBSet(member), m: member) {
     delete(acc, m)
@@ -66,8 +62,6 @@ pub fn intersection(
   of first: RBSet(member),
   and second: RBSet(member),
 ) -> RBSet(member) {
-  echo first
-  echo second
   let acc = new(first.comparator)
   let acc =
     fold(first, acc, fn(acc: RBSet(member), member) {
@@ -91,8 +85,6 @@ pub fn map(
   with fun: fn(member) -> mapped,
   comparator comparator: fn(mapped, mapped) -> Int,
 ) -> RBSet(mapped) {
-  echo set
-  echo fun
   case set.head {
     Some(head) -> RBSet(Some(map_impl(head, fun)), comparator)
     None -> RBSet(None, comparator)
@@ -123,8 +115,6 @@ pub fn filter(
   in set: RBSet(member),
   keeping predicate: fn(member) -> Bool,
 ) -> RBSet(member) {
-  echo set
-  echo predicate
   case set.head {
     Some(head) -> filter_impl(head, predicate, new(set.comparator))
     None -> set
@@ -157,17 +147,14 @@ pub fn from_list(
   members: List(member),
   comparator: fn(member, member) -> Int,
 ) -> RBSet(member) {
-  echo members
   from_list_impl(members, new(comparator))
 }
 
 pub fn to_list(set: RBSet(member)) -> List(member) {
-  echo set
   fold(set, [], fn(acc: List(member), m: member) { [m, ..acc] })
 }
 
 pub fn size(set: RBSet(member)) -> Int {
-  echo set
   fold(set, 0, fn(acc: Int, _m) { acc + 1 })
 }
 
