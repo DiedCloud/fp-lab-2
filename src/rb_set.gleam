@@ -1,22 +1,14 @@
 //// Set implementation based on Red-Black tree!
-//// Not implented functions comparing to set from gleam stdlib: contains, symmetric_difference, drop, take, each, is_disjoint, is_subset
+//// Not implented functions comparing to set from gleam stdlib: symmetric_difference, drop, take, each, is_disjoint, is_subset
 
 import gleam/list
 import gleam/option.{type Option, None, Some}
-
-type RBColor {
-  Red
-  Black
-}
-
-type RBNode(member) {
-  RBNode(
-    value: member,
-    left: Option(RBNode(member)),
-    right: Option(RBNode(member)),
-    color: RBColor,
-  )
-}
+import rb_set/internal/contains.{contains_impl}
+import rb_set/internal/core.{type RBNode, Black, RBNode, Red}
+import rb_set/internal/delete.{delete_find}
+import rb_set/internal/fold.{fold_impl}
+import rb_set/internal/insert.{fix_insertion, insert_impl}
+import rb_set/internal/map.{map_impl}
 
 pub opaque type RBSet(member) {
   RBSet(head: Option(RBNode(member)), comparator: fn(member, member) -> Int)
@@ -25,29 +17,25 @@ pub opaque type RBSet(member) {
 pub fn insert(into set: RBSet(member), this member: member) -> RBSet(member) {
   echo set
   echo member
-  todo
+  case set {
+    RBSet(None, comparator) ->
+      RBSet(Some(RBNode(member, None, None, Black)), comparator)
+    RBSet(node, comparator) ->
+      node
+      |> insert_impl(member, comparator)
+      |> fix_insertion
+      |> Some
+      |> RBSet(comparator)
+  }
 }
 
 pub fn delete(from set: RBSet(member), this member: member) -> RBSet(member) {
   echo set
   echo member
-  todo
-}
-
-fn contains_impl(node: RBNode(member), member: member) {
-  case node.value == member {
-    False -> {
-      let v1 = case node.left {
-        Some(l) -> contains_impl(l, member)
-        None -> False
-      }
-      let v2 = case node.right {
-        Some(r) -> contains_impl(r, member)
-        None -> False
-      }
-      v1 || v2
-    }
-    True -> True
+  case set.head {
+    Some(head) ->
+      RBSet(delete_find(head, member, set.comparator), set.comparator)
+    None -> set
   }
 }
 
@@ -103,21 +91,6 @@ pub fn intersection(
   acc
 }
 
-fn map_impl(node: RBNode(member), fun: fn(member) -> mapped) -> RBNode(mapped) {
-  RBNode(
-    fun(node.value),
-    case node.left {
-      Some(l) -> Some(map_impl(l, fun))
-      None -> None
-    },
-    case node.right {
-      Some(r) -> Some(map_impl(r, fun))
-      None -> None
-    },
-    node.color,
-  )
-}
-
 pub fn map(
   set: RBSet(member),
   with fun: fn(member) -> mapped,
@@ -163,23 +136,6 @@ pub fn filter(
     Some(head) -> filter_impl(head, predicate, new(set.comparator))
     None -> set
   }
-}
-
-fn fold_impl(
-  node: RBNode(member),
-  acc: acc,
-  reducer: fn(acc, member) -> acc,
-) -> acc {
-  let acc = reducer(acc, node.value)
-  let acc = case node.left {
-    Some(l) -> fold_impl(l, acc, reducer)
-    None -> acc
-  }
-  let acc = case node.right {
-    Some(r) -> fold_impl(r, acc, reducer)
-    None -> acc
-  }
-  acc
 }
 
 pub fn fold(
