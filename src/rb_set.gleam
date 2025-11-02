@@ -4,10 +4,10 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import rb_set/internal/contains.{contains_impl}
-import rb_set/internal/core.{type RBNode, Black, RBNode, Red}
-import rb_set/internal/delete.{delete_find}
+import rb_set/internal/core.{type RBNode, Black, RBNode}
+import rb_set/internal/delete.{delete_impl}
 import rb_set/internal/fold.{fold_impl}
-import rb_set/internal/insert.{fix_insertion, insert_impl}
+import rb_set/internal/insert.{insert_impl}
 import rb_set/internal/map.{map_impl}
 
 pub opaque type RBSet(member) {
@@ -23,7 +23,6 @@ pub fn insert(into set: RBSet(member), this member: member) -> RBSet(member) {
     RBSet(node, comparator) ->
       node
       |> insert_impl(member, comparator)
-      |> fix_insertion
       |> Some
       |> RBSet(comparator)
   }
@@ -32,11 +31,7 @@ pub fn insert(into set: RBSet(member), this member: member) -> RBSet(member) {
 pub fn delete(from set: RBSet(member), this member: member) -> RBSet(member) {
   echo set
   echo member
-  case set.head {
-    Some(head) ->
-      RBSet(delete_find(head, member, set.comparator), set.comparator)
-    None -> set
-  }
+  set.head |> delete_impl(member, set.comparator) |> RBSet(set.comparator)
 }
 
 pub fn contains(in set: RBSet(member), this member: member) -> Bool {
@@ -109,21 +104,19 @@ fn filter_impl(
   predicate: fn(member) -> Bool,
   acc: RBSet(member),
 ) -> RBSet(member) {
-  case predicate(node.value) {
-    True -> {
-      let acc = insert(into: acc, this: node.value)
-      let acc = case node.left {
-        Some(l) -> filter_impl(l, predicate, acc)
-        None -> acc
-      }
-      let acc = case node.right {
-        Some(r) -> filter_impl(r, predicate, acc)
-        None -> acc
-      }
-      acc
-    }
+  let acc = case predicate(node.value) {
+    True -> insert(into: acc, this: node.value)
     False -> acc
   }
+  let acc = case node.left {
+    Some(l) -> filter_impl(l, predicate, acc)
+    None -> acc
+  }
+  let acc = case node.right {
+    Some(r) -> filter_impl(r, predicate, acc)
+    None -> acc
+  }
+  acc
 }
 
 pub fn filter(
@@ -153,9 +146,9 @@ pub fn new(comparator: fn(member, member) -> Int) -> RBSet(member) {
   RBSet(None, comparator)
 }
 
-fn from_list_impl(members: List(member), acc: RBSet(member)) {
+fn from_list_impl(members: List(member), acc: RBSet(member)) -> RBSet(member) {
   case members {
-    [a, ..] -> insert(acc, a)
+    [a, ..tail] -> from_list_impl(tail, insert(acc, a))
     [] -> acc
   }
 }
