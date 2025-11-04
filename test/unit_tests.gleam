@@ -77,6 +77,38 @@ pub fn insert_test() {
   let set = rb_set.from_list([1, 2, 3], compare)
   let res = rb_set.from_list([1, 2, 3, 4], compare)
   assert rb_set.insert(into: set, this: 3) |> rb_set.insert(this: 4) == res
+
+  let set = rb_set.from_list([1, 2, 3, 5, 12_352_145], compare)
+  let res =
+    rb_set.from_list(
+      [
+        1,
+        2,
+        3,
+        5,
+        12_352_145,
+        4,
+        6,
+        -1023,
+        121_221_234,
+        78_634,
+        -1_287_645,
+        98_723,
+        -78_923,
+      ],
+      compare,
+    )
+  let set =
+    set
+    |> rb_set.insert(4)
+    |> rb_set.insert(6)
+    |> rb_set.insert(-1023)
+    |> rb_set.insert(121_221_234)
+    |> rb_set.insert(78_634)
+    |> rb_set.insert(-1_287_645)
+    |> rb_set.insert(98_723)
+    |> rb_set.insert(-78_923)
+  assert rb_set.compare(set, res)
 }
 
 pub fn delete_test() {

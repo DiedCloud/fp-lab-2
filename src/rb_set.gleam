@@ -8,7 +8,7 @@ import rb_set/internal/core.{type RBNode, Black, RBNode}
 import rb_set/internal/delete.{delete_impl}
 import rb_set/internal/fold.{fold_impl}
 import rb_set/internal/insert.{insert_impl}
-import rb_set/internal/map.{map_impl}
+import rb_set/internal/map.{simple_mapper_apply}
 
 pub type RBSet(member) {
   RBSet(head: Option(RBNode(member)), comparator: fn(member, member) -> Int)
@@ -86,7 +86,14 @@ pub fn map(
   comparator comparator: fn(mapped, mapped) -> Int,
 ) -> RBSet(mapped) {
   case set.head {
-    Some(head) -> RBSet(Some(map_impl(head, fun)), comparator)
+    Some(head) ->
+      head
+      |> simple_mapper_apply(fun)
+      |> Some()
+      |> RBSet(comparator)
+      |> fold(new(comparator), fn(acc: RBSet(mapped), mapped: mapped) {
+        insert(acc, mapped)
+      })
     None -> RBSet(None, comparator)
   }
 }
