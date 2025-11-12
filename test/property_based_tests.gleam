@@ -33,6 +33,23 @@ pub fn union__test() {
   assert rb_set.compare(union_res, reference_union_res)
 }
 
+pub fn union_association__test() {
+  let config = qcheck.default_config() |> qcheck.with_test_count(10)
+
+  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+  use list_b <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+  use list_c <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+
+  let a = rb_set.from_list(list_a, compare)
+  let b = rb_set.from_list(list_b, compare)
+  let c = rb_set.from_list(list_c, compare)
+
+  let ab = rb_set.union(a, b)
+  let bc = rb_set.union(b, c)
+
+  assert rb_set.compare(rb_set.union(ab, c), rb_set.union(a, bc))
+}
+
 pub fn union_with_neutral__test() {
   use init_list <- qcheck.given(qcheck.list_from(qcheck.uniform_int()))
   let added_elements = []
@@ -114,6 +131,23 @@ pub fn intersection__test() {
   assert rb_set.compare(intersection_res, reference_intersection_res)
 }
 
+pub fn intersection_association__test() {
+  let config = qcheck.default_config() |> qcheck.with_test_count(10)
+
+  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+  use list_b <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+  use list_c <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+
+  let a = rb_set.from_list(list_a, compare)
+  let b = rb_set.from_list(list_b, compare)
+  let c = rb_set.from_list(list_c, compare)
+
+  let ab = rb_set.intersection(a, b)
+  let bc = rb_set.intersection(b, c)
+
+  assert rb_set.compare(rb_set.intersection(ab, c), rb_set.intersection(a, bc))
+}
+
 pub fn intersection_with_neutral__test() {
   use list_a <- qcheck.given(qcheck.list_from(qcheck.uniform_int()))
   let set_a = rb_set.from_list(list_a, compare)
@@ -151,6 +185,24 @@ pub fn filter__test() {
   let reference_filter_res = reference_filter(set_a, predicate, compare)
 
   assert rb_set.compare(filter_res, reference_filter_res)
+}
+
+pub fn filter_association__test() {
+  let config = qcheck.default_config() |> qcheck.with_test_count(1)
+
+  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+
+  use upper_bound_1 <- qcheck.given(qcheck.uniform_int())
+  use upper_bound_2 <- qcheck.given(qcheck.uniform_int())
+  let predicate_1 = fn(a: Int) -> Bool { a % 2 == 0 && a <= upper_bound_1 }
+  let predicate_2 = fn(a: Int) -> Bool { a % 3 == 0 && a <= upper_bound_2 }
+
+  let a = rb_set.from_list(list_a, compare)
+
+  let a12 = a |> rb_set.filter(predicate_1) |> rb_set.filter(predicate_2)
+  let a21 = a |> rb_set.filter(predicate_2) |> rb_set.filter(predicate_1)
+
+  assert rb_set.compare(a12, a21)
 }
 
 pub fn filter_with_neutral__test() {
