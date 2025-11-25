@@ -8,6 +8,13 @@ fn compare(a: Int, b: Int) -> Int {
   b - a
 }
 
+pub fn set_from(
+  element_generator: qcheck.Generator(List(Int)),
+) -> qcheck.Generator(rb_set.RBSet(Int)) {
+  use init_list <- qcheck.map(element_generator)
+  rb_set.from_list(init_list, compare)
+}
+
 fn reference_union(set: rb_set.RBSet(member), list: List(member)) {
   case list {
     [a, ..tail] -> reference_union(rb_set.insert(set, a), tail)
@@ -18,17 +25,17 @@ fn reference_union(set: rb_set.RBSet(member), list: List(member)) {
 pub fn union__test() {
   let config = qcheck.default_config() |> qcheck.with_test_count(100)
 
-  use init_list <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-  use added_elements <- qcheck.run(
+  use set <- qcheck.run(
     config,
-    qcheck.list_from(qcheck.uniform_int()),
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
+  use set_to_add <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
   )
 
-  let set = rb_set.from_list(init_list, compare)
-  let set_to_add = rb_set.from_list(added_elements, compare)
-
   let union_res = rb_set.union(set, set_to_add)
-  let reference_union_res = reference_union(set, added_elements)
+  let reference_union_res = reference_union(set, set_to_add |> rb_set.to_list)
 
   assert rb_set.compare(union_res, reference_union_res)
 }
@@ -36,13 +43,18 @@ pub fn union__test() {
 pub fn union_association__test() {
   let config = qcheck.default_config() |> qcheck.with_test_count(10)
 
-  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-  use list_b <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-  use list_c <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-
-  let a = rb_set.from_list(list_a, compare)
-  let b = rb_set.from_list(list_b, compare)
-  let c = rb_set.from_list(list_c, compare)
+  use a <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
+  use b <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
+  use c <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
   let ab = rb_set.union(a, b)
   let bc = rb_set.union(b, c)
@@ -51,15 +63,15 @@ pub fn union_association__test() {
 }
 
 pub fn union_with_neutral__test() {
-  use init_list <- qcheck.given(qcheck.list_from(qcheck.uniform_int()))
-  let added_elements = []
+  use set <- qcheck.given(
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
-  let set = rb_set.from_list(init_list, compare)
   // нейтральный элмент - пустое множество
   let set_to_add = rb_set.new(compare)
 
   let union_res = rb_set.union(set, set_to_add)
-  let reference_union_res = reference_union(set, added_elements)
+  let reference_union_res = reference_union(set, [])
 
   assert rb_set.compare(union_res, reference_union_res)
 }
@@ -74,28 +86,32 @@ fn reference_difference(set: rb_set.RBSet(member), list: List(member)) {
 pub fn difference__test() {
   let config = qcheck.default_config() |> qcheck.with_test_count(10)
 
-  use init_list <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-  use drop_list <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-
-  let set = rb_set.from_list(init_list, compare)
-  let set_to_drop = rb_set.from_list(drop_list, compare)
+  use set <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
+  use set_to_drop <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
   let difference_res = rb_set.difference(set, set_to_drop)
-  let reference_difference_res = reference_difference(set, drop_list)
+  let reference_difference_res =
+    reference_difference(set, set_to_drop |> rb_set.to_list)
 
   assert rb_set.compare(difference_res, reference_difference_res)
 }
 
 pub fn difference_with_neutral__test() {
-  use init_list <- qcheck.given(qcheck.list_from(qcheck.uniform_int()))
-  let dropped_elements = []
+  use set <- qcheck.given(
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
-  let set = rb_set.from_list(init_list, compare)
   // нейтральный элмент - пустое множество
   let set_to_drop = rb_set.new(compare)
 
   let difference_res = rb_set.difference(set, set_to_drop)
-  let reference_difference_res = reference_difference(set, dropped_elements)
+  let reference_difference_res = reference_difference(set, [])
 
   assert rb_set.compare(difference_res, reference_difference_res)
 }
@@ -118,15 +134,22 @@ fn reference_intersection(
 pub fn intersection__test() {
   let config = qcheck.default_config() |> qcheck.with_test_count(100)
 
-  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-  use list_b <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-
-  let set_a = rb_set.from_list(list_a, compare)
-  let set_b = rb_set.from_list(list_b, compare)
+  use set_a <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
+  use set_b <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
   let intersection_res = rb_set.intersection(set_a, set_b)
   let reference_intersection_res =
-    reference_intersection(rb_set.new(compare), list_a, list_b)
+    reference_intersection(
+      rb_set.new(compare),
+      set_a |> rb_set.to_list,
+      set_b |> rb_set.to_list,
+    )
 
   assert rb_set.compare(intersection_res, reference_intersection_res)
 }
@@ -134,13 +157,18 @@ pub fn intersection__test() {
 pub fn intersection_association__test() {
   let config = qcheck.default_config() |> qcheck.with_test_count(10)
 
-  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-  use list_b <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-  use list_c <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
-
-  let a = rb_set.from_list(list_a, compare)
-  let b = rb_set.from_list(list_b, compare)
-  let c = rb_set.from_list(list_c, compare)
+  use a <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
+  use b <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
+  use c <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
   let ab = rb_set.intersection(a, b)
   let bc = rb_set.intersection(b, c)
@@ -149,13 +177,18 @@ pub fn intersection_association__test() {
 }
 
 pub fn intersection_with_neutral__test() {
-  use list_a <- qcheck.given(qcheck.list_from(qcheck.uniform_int()))
-  let set_a = rb_set.from_list(list_a, compare)
+  use set <- qcheck.given(
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
-  let intersection_res = rb_set.intersection(set_a, set_a)
+  let intersection_res = rb_set.intersection(set, set)
   // нейтральный элмент для пересечения - то же самое множество
   let reference_intersection_res =
-    reference_intersection(rb_set.new(compare), list_a, list_a)
+    reference_intersection(
+      rb_set.new(compare),
+      set |> rb_set.to_list,
+      set |> rb_set.to_list,
+    )
 
   assert rb_set.compare(intersection_res, reference_intersection_res)
 }
@@ -174,12 +207,13 @@ fn reference_filter(
 pub fn filter__test() {
   let config = qcheck.default_config() |> qcheck.with_test_count(100)
 
-  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+  use set_a <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
   use upper_bound <- qcheck.given(qcheck.uniform_int())
   let predicate = fn(a: Int) -> Bool { a % 2 == 0 && a <= upper_bound }
-
-  let set_a = rb_set.from_list(list_a, compare)
 
   let filter_res = rb_set.filter(set_a, predicate)
   let reference_filter_res = reference_filter(set_a, predicate, compare)
@@ -190,26 +224,27 @@ pub fn filter__test() {
 pub fn filter_association__test() {
   let config = qcheck.default_config() |> qcheck.with_test_count(1)
 
-  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+  use set_a <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
   use upper_bound_1 <- qcheck.given(qcheck.uniform_int())
   use upper_bound_2 <- qcheck.given(qcheck.uniform_int())
   let predicate_1 = fn(a: Int) -> Bool { a % 2 == 0 && a <= upper_bound_1 }
   let predicate_2 = fn(a: Int) -> Bool { a % 3 == 0 && a <= upper_bound_2 }
 
-  let a = rb_set.from_list(list_a, compare)
-
-  let a12 = a |> rb_set.filter(predicate_1) |> rb_set.filter(predicate_2)
-  let a21 = a |> rb_set.filter(predicate_2) |> rb_set.filter(predicate_1)
+  let a12 = set_a |> rb_set.filter(predicate_1) |> rb_set.filter(predicate_2)
+  let a21 = set_a |> rb_set.filter(predicate_2) |> rb_set.filter(predicate_1)
 
   assert rb_set.compare(a12, a21)
 }
 
 pub fn filter_with_neutral__test() {
-  use list_a <- qcheck.given(qcheck.list_from(qcheck.uniform_int()))
+  use set_a <- qcheck.given(
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
   let predicate = fn(_a: member) { True }
-
-  let set_a = rb_set.from_list(list_a, compare)
 
   let filter_res = rb_set.filter(set_a, predicate)
   let reference_filter_res = reference_filter(set_a, predicate, compare)
@@ -228,7 +263,10 @@ fn reference_map(
 pub fn map__test() {
   let config = qcheck.default_config() |> qcheck.with_test_count(20)
 
-  use list_a <- qcheck.run(config, qcheck.list_from(qcheck.uniform_int()))
+  use set_a <- qcheck.run(
+    config,
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
 
   use upper_bound <- qcheck.run(config, qcheck.uniform_int())
   use multiplier <- qcheck.run(config, qcheck.uniform_int())
@@ -238,8 +276,6 @@ pub fn map__test() {
     int.clamp(a * multiplier - sub, 0, upper_bound)
   }
 
-  let set_a = rb_set.from_list(list_a, compare)
-
   let map_res = rb_set.map(set_a, mapper, compare)
   let reference_map_res = reference_map(set_a, mapper, compare)
 
@@ -247,10 +283,10 @@ pub fn map__test() {
 }
 
 pub fn map_with_neutral__test() {
-  use list_a <- qcheck.given(qcheck.list_from(qcheck.uniform_int()))
+  use set_a <- qcheck.given(
+    qcheck.uniform_int() |> qcheck.list_from |> set_from,
+  )
   let mapper = fn(a: member) { a }
-
-  let set_a = rb_set.from_list(list_a, compare)
 
   let map_res = rb_set.map(set_a, mapper, compare)
   let reference_map_res = reference_map(set_a, mapper, compare)
