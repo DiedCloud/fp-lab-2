@@ -276,10 +276,10 @@ gleam test
 ```
 PS G:\Files\Itmo\FP\fp-lab-2> gleam test
   Compiling rb_set
-   Compiled in 0.43s
+   Compiled in 0.42s
     Running rb_set_test.main
 ..........................
-26 tests, no failures
+29 tests, no failures
 ```
 
 ## Заключение

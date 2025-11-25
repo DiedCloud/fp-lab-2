@@ -3,6 +3,7 @@
 
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import rb_set/internal/compare.{compare_impl}
 import rb_set/internal/contains.{contains_impl}
 import rb_set/internal/core.{type RBNode, Black, RBNode}
 import rb_set/internal/delete.{delete_impl}
@@ -38,7 +39,7 @@ pub fn contains(in set: RBSet(member), this member: member) -> Bool {
 }
 
 pub fn compare(this first: RBSet(member), with second: RBSet(member)) -> Bool {
-  size(difference(first, second)) == 0 && size(difference(second, first)) == 0
+  compare_impl(first.head, second.head)
 }
 
 pub fn union(

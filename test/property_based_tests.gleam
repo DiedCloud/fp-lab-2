@@ -63,9 +63,7 @@ pub fn union_association__test() {
 }
 
 pub fn union_with_neutral__test() {
-  use set <- qcheck.given(
-    qcheck.uniform_int() |> qcheck.list_from |> set_from,
-  )
+  use set <- qcheck.given(qcheck.uniform_int() |> qcheck.list_from |> set_from)
 
   // нейтральный элмент - пустое множество
   let set_to_add = rb_set.new(compare)
@@ -103,9 +101,7 @@ pub fn difference__test() {
 }
 
 pub fn difference_with_neutral__test() {
-  use set <- qcheck.given(
-    qcheck.uniform_int() |> qcheck.list_from |> set_from,
-  )
+  use set <- qcheck.given(qcheck.uniform_int() |> qcheck.list_from |> set_from)
 
   // нейтральный элмент - пустое множество
   let set_to_drop = rb_set.new(compare)
@@ -177,9 +173,7 @@ pub fn intersection_association__test() {
 }
 
 pub fn intersection_with_neutral__test() {
-  use set <- qcheck.given(
-    qcheck.uniform_int() |> qcheck.list_from |> set_from,
-  )
+  use set <- qcheck.given(qcheck.uniform_int() |> qcheck.list_from |> set_from)
 
   let intersection_res = rb_set.intersection(set, set)
   // нейтральный элмент для пересечения - то же самое множество
